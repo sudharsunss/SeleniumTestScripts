@@ -1,5 +1,8 @@
 package seleniumTestScripts;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.openqa.selenium.Keys;
@@ -12,6 +15,7 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 public class TC016AJIOTestScript {
@@ -20,7 +24,7 @@ public class TC016AJIOTestScript {
 	public static void main(String[] args) throws InterruptedException {
 		// TODO Auto-generated method stub
 		// 1) Go to https://www.ajio.com/
-		System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver.exe");
+		System.setProperty("webdriver.chrome.driver", "./drivers/chromedriver1.exe");
 		System.setProperty("webdriver.chrome.silentOutput", "true");
 		
 		ChromeOptions options = new ChromeOptions();
@@ -52,7 +56,10 @@ public class TC016AJIOTestScript {
 		// 3) Click on five grid and Select SORT BY as "What's New"
 		WebElement eleFiveGrid = driver.findElementByXPath("//div[@class = 'five-grid']");
 		action.click(eleFiveGrid).build().perform();
-		Thread.sleep(5000);
+		
+		WebElement eleSort = driver.findElementByXPath("//div[@class='filter-dropdown']/select");
+		Select selSort = new Select(eleSort);
+		selSort.selectByVisibleText("What's New");
 		
 		// 4) Enter Price Range Min as 2000 and Max as 5000
 		driver.findElementByXPath("//span[text() = 'price']").click();
@@ -68,35 +75,34 @@ public class TC016AJIOTestScript {
 		driver.findElementByXPath("(//button[@type = 'submit'])[2]").click();
 		
 		// 5) Click on the product "Puma Ferrari LS Shoulder Bag"
-		driver.findElementByXPath("//img[contains(@alt,'Ferrari LS Shoulder Bag')]").click();
 		Thread.sleep(5000);
-
+		WebElement eleBag = driver.findElementByXPath("//div[text()='Ferrari LS Shoulder Bag']");
+		action.moveToElement(eleBag).perform();
+		Thread.sleep(5000);
+		eleBag.click();
+		
 		// 6) Verify the Coupon code for the price above 2690 is applicable for your product, if applicable the get the Coupon Code and Calculate the discount price for the coupon
-		WebElement eleBagPrice = driver.findElementByXPath("//div[@class='prod-sp']");
-		String BagPriceStr = eleBagPrice.getText();
-		Integer BagPrice = Integer.parseInt(BagPriceStr.replaceAll("\\D", ""));
-		System.out.println("Bag Price is "+ BagPrice);
+		String couponCodeEPIC = null;
+		Set<String> winSet1 = driver.getWindowHandles();
+		List<String> winList1 = new ArrayList<String>(winSet1);
+		driver.switchTo().window(winList1.get(1));
+		String webprice = driver.findElementByXPath("//div[@class='prod-sp']").getText();
+		System.out.println("Price:"+webprice);
+		String price = webprice.replaceAll("\\D", "");
+		int priceValue = Integer.parseInt(price);
 		
-		WebElement elePromoPrice = driver.findElementByXPath("//div[@class='promo-desc']");
-		String strPromoPrice = elePromoPrice.getText();
-		//System.out.println(strPromoPrice);
-		Integer DiscountPercentage = Integer.parseInt(strPromoPrice.replaceAll("\\D", "").substring(0, 2)); 
-		Integer PromoPrice = Integer.parseInt(strPromoPrice.replaceAll("\\D", "").substring(2, 6)); //Because replacing all the non integers give the percentage and price alone. Discount can never be 3 digits - 100%, hence always this code gives a 6 digit number
-		
-		System.out.println("Promotional Price Limit is " +PromoPrice);
-		//System.out.println("Discount Percentage is " +DiscountPercentage);
-		int intPriceBeforeCheckout = 0;
-		if (BagPrice>PromoPrice) {
-			System.out.println("Product Applicable for Discount");
-			double DiscountedPrice = BagPrice - (DiscountPercentage*BagPrice/100);
-			intPriceBeforeCheckout= (int)Math.round(DiscountedPrice);
-			System.out.println("Bag Price after Discount is " + intPriceBeforeCheckout);
-			
-			}
-		else
-		{
-			System.out.println("Product Not Applicable for Discount");
+		if(priceValue>=2690) {
+			String webcouponCodeEPIC = driver.findElementByXPath("//div[@class= 'promo-title']").getText();
+			couponCodeEPIC = webcouponCodeEPIC.substring(8);
+			System.out.println("Coupon Code is :"+couponCodeEPIC);
 		}
+		String newPrice = driver.findElementByXPath("//div[@class='promo-discounted-price']/span").getText();
+		int newPriceValue = Integer.parseInt(newPrice.replaceAll("\\D", ""));
+		System.out.println("The new Price Value is:" +newPriceValue);
+		System.out.println("The original Price value is :"+priceValue);
+		double discountPrice = priceValue-newPriceValue;
+		System.out.println("The discount price:"+discountPrice);
+		//System.out.println("Discount Percentage is " +DiscountPercentage);
 		
 		// 7) Check the availability of the product for pincode 560043, print the expected delivery date if it is available
 		WebElement enterPincode = driver.findElementByXPath("//span[contains(text(),'Enter pin-code')]");
@@ -107,7 +113,7 @@ public class TC016AJIOTestScript {
 		
 		pincodePopup.sendKeys("560043", Keys.ENTER);
 		
-		String EstimatedDelivery = driver.findElementByXPath("//div[contains(@class,'edd-pincode-msg-details')]").getText();
+		String EstimatedDelivery = driver.findElementByXPath("//ul[@class='edd-message-success-details']//span").getText();
 		System.out.println("Estimated Delivery date is " +EstimatedDelivery);
 		
 		// 8) Click on Other Informations under Product Details and Print the Customer Care address, phone and email
@@ -135,27 +141,30 @@ public class TC016AJIOTestScript {
 		System.out.println("Order Total of the Product is "+OrderTotal);
 		
 		//11) Enter Coupon Code and Click Apply
-		WebElement eleCouponCode = driver.findElementByXPath("//input[@id='EPIC']");
+		WebElement eleCouponCode = driver.findElementByXPath("//p[text()='EPIC33']");
 		action.click(eleCouponCode).build().perform();
 		
 		driver.findElementByXPath("//button[text()='Apply']").click();
 		
 		// 12) Verify the Coupon Savings amount(round off if it in decimal) under Order Summary and the matches the amount calculated in Product details
-		WebElement elePriceAfterDiscount = driver.findElementByXPath("//div[contains(@class,'net-price best-price-strip')]");
-		String strPriceAfterDiscount = elePriceAfterDiscount.getText();
-		System.out.println(strPriceAfterDiscount);
-		Double PriceAfterDiscount = Double.parseDouble(strPriceAfterDiscount.replaceAll("\\D", ""));
-		int intPriceAfterCheckout = (int) Math.round(PriceAfterDiscount);
-		System.out.println("Price After Discount is " +intPriceAfterCheckout);
+		String summaryCouponSavings = driver.findElementByXPath("(//span[@class='price-value discount-price'])[2]").getText();
+		System.out.println("Summary Coupon Savings Amount is :"+summaryCouponSavings);
+		String num = summaryCouponSavings.replaceAll("Rs.","");
+		double amount = Double.parseDouble(num);
 		
-		if(intPriceAfterCheckout == intPriceBeforeCheckout)
+		int couponSavingsAmount = (int) Math.round(amount);
+
+		if(couponSavingsAmount==discountPrice)
 		{
-			System.out.println("Price Before Checkout and Price After Checkout is a match");
+			System.out.println("Order Summary Amount matches the Product details amount");
+		}
+		else
+		{
+			System.out.println("Order Summary Amount doesnot matche the Product details amount");
 		}
 		
-		
 		// 13) Click on Delete and Delete the item from Bag
-		driver.findElementByXPath("//div[text()='delete-btn'").click();
+		driver.findElementByXPath("//div[text()='Delete']").click();
 		
 		// 14) Close all the browsers
 		driver.quit();
