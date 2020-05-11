@@ -2,6 +2,8 @@ package seleniumTestScripts;
 
 import java.util.concurrent.TimeUnit;
 
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.interactions.Actions;
@@ -14,7 +16,7 @@ public class TC017AzureMSTestScript {
 	public static void main(String[] args) throws InterruptedException {
 		// TODO Auto-generated method stub
 		//1) Go to https://azure.microsoft.com/en-in/
-		System.setProperty("webdriver.chrome.driver","./drivers/chromedriver.exe");
+		System.setProperty("webdriver.chrome.driver","./drivers/chromedriver1.exe");
 		ChromeDriver driver = new ChromeDriver();
 		driver.manage().window().maximize();
 		driver.manage().timeouts().implicitlyWait(5, TimeUnit.SECONDS);
@@ -42,8 +44,9 @@ public class TC017AzureMSTestScript {
 		selRegion.selectByVisibleText("South India");
 		
 		//8) Set the Duration as 180000 seconds
-		driver.findElementByXPath("//input[@name='seconds']").clear();
-		driver.findElementByXPath("//input[@name='seconds']").sendKeys("18000");
+		WebElement eleSeconds = driver.findElementByXPath("//input[@name='seconds']");
+		eleSeconds.clear();
+		eleSeconds.sendKeys(Keys.HOME, Keys.chord(Keys.SHIFT,Keys.END),"18000");
 		
 		//9) Select the Memory as 4GB
 		WebElement eleMemory = driver.findElementByXPath("//select[@name='memory']");
@@ -51,45 +54,49 @@ public class TC017AzureMSTestScript {
 		selMemory.selectByVisibleText("4 GB");
 
 		//10) Enable SHOW DEV/TEST PRICING
-		WebElement eleDevTest = driver.findElementByXPath("//div[@class='toggler-container ']//button");
-		Actions action = new Actions(driver);
-		action.click(eleDevTest).build().perform();
+		driver.findElementByXPath("//span[text()='Show Dev/Test Pricing']").click();
 		
 		//11) Select Indian Rupee  as currency
-		WebElement eleCurrency = driver.findElementByXPath("//select[@class='select currency-dropdown']");
+		WebElement eleCurrency = driver.findElementByXPath("(//select[@aria-label='Currency'])[1]");
 		Select selCurrency = new Select(eleCurrency);
-		selCurrency.deselectByVisibleText("INR");
+		selCurrency.selectByValue("INR");
 		
 		//12) Print the Estimated monthly price
-		WebElement eleMonthlyCost = driver.findElementByXPath("(//span[text()= 'Monthly cost']//following::span[@class='numeric'])[3]");
-		String monthlyCost = eleMonthlyCost.getText();
-		System.out.println("Estimated Monthly Cost is :" + monthlyCost);
+		String EstimatedAmount = driver.findElementByXPath("(//span[@class='numeric'])[4]").getText();
+	    
+		System.out.println("Estimated Monthly Cost is :" + EstimatedAmount);
 		
 		//13) Click on Export to download the estimate as excel
-		WebElement eleExport = driver.findElementByXPath("//button[text()='Export']");
-		action.click(eleExport).build().perform();
+		driver.findElementByXPath("//button[@class='calculator-button button-transparent export-button']").click();
 		
 		//14) Navigate to Example Scenarios and Select CI/CD for Containers
-		action.moveToElement(driver.findElementByXPath("//a[text()='Example Scenarios']")).click().build().perform();
-		System.out.println("User Navigated to Example Scenarios");
-		driver.findElementByXPath("//span[text()='CI/CD for Containers']").click();
-				
+		WebElement webExampleScenario = driver.findElementByLinkText("Example Scenarios");
+	    Actions builder = new Actions(driver);
+	    builder.moveToElement(webExampleScenario).click().perform();
+	    driver.findElementByXPath("//button[@title='CI/CD for Containers']").click();
+	    
 		//15) Click Add to Estimate
-		WebDriverWait wait = new WebDriverWait(driver, 30);
-		WebElement eleAddToEstimate = driver.findElementByXPath("//button[text()='Add to estimate']");
-		wait.until(ExpectedConditions.elementToBeClickable(eleAddToEstimate));
-		action.moveToElement(eleAddToEstimate).click().build().perform();
-	
+		WebElement webAddToEstimate = driver.findElementByXPath("//button[text()='Add to estimate']");
+	    JavascriptExecutor js = (JavascriptExecutor) driver;
+	    js.executeScript("arguments[0].click()", webAddToEstimate);
+	    Thread.sleep(4000);
+	    
 		//16) Change the Currency as Indian Rupee
-		WebElement eleCurr = driver.findElementByXPath("//select[@class='select currency-dropdown']");
-		Select selCurr = new Select(eleCurr);
-		selCurr.selectByValue("INR");
-		
+		WebElement webCurrency1 = driver.findElementByXPath("(//select[@aria-label='Currency'])[1]");
+		js.executeScript("arguments[0].click()", webCurrency1);
+		Select drp3 = new Select(webCurrency1);
+		Thread.sleep(2000);
+		drp3.selectByValue("INR");
+		Thread.sleep(2000);
+		    
 		//17) Enable SHOW DEV/TEST PRICING
-		action.moveToElement(driver.findElementByXPath("//div[contains(@class,'toggler-slide')]")).click().build().perform();
+		driver.findElementByXPath("//span[text()='Show Dev/Test Pricing']").click();
 		
 		//18) Export the Estimate
-		action.moveToElement(driver.findElementByXPath("//button[text()='Export']")).click().build().perform();
+		driver.findElementByXPath("//button[@class='calculator-button button-transparent export-button']").click();
+		
+		driver.close();
 	}
 
+	
 }
